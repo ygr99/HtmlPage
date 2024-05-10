@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间</title>
+    <style>
+        .centered-div {
+            margin: 0 auto;
+            width: 150px;
+            /* 设置一个固定宽度，或者使用百分比 */
+            border: 1px solid black;
+            /* 边框仅用于示例 */
+        }
+
+        .progress-bar {
+            width: 100px;
+            margin-bottom: 10px;
+            background-color: #f3f3f3;
+            height: 20px;
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: attr(data-progress) '%';
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #000;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background-color: #007BFF;
+            width: 0;
+            transition: width 1s ease-in-out;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- <h1>时间</h1> -->
+
+
+
+
+    <div class="centered-div">
+
+        今天已过<div id="day-progress" class="progress-bar" data-progress="0"></div>
+        本月已过<div id="month-progress" class="progress-bar" data-progress="0"></div>
+        今年已过<div id="year-progress" class="progress-bar" data-progress="0"></div>
+
+
+        <span>入职 </span>
+        <span id="entry-date">正在加载...</span>
+
+        <br>
+
+        <!-- 距离下班时间还有几小时几分钟 -->
+        <span>下班 </span>
+        <span id="leave-date">正在加载...</span>
+
+
+    </div>
+
+
+
+    <script>
+        function updateProgress() {
+            const now = new Date();
+            const yearStart = new Date(now.getFullYear(), 0, 1);
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            let yearProgress = (now - yearStart) / ((new Date(now.getFullYear() + 1, 0, 1) - yearStart)) * 100;
+            let monthProgress = (now - monthStart) / ((new Date(now.getFullYear(), now.getMonth() + 1, 0) - monthStart)) * 100;
+            let dayProgress = (now.getHours() * 60 * 60 + now.getMinutes() * 60 + now.getSeconds()) / (24 * 60 * 60) * 100;
+
+            yearProgress = Math.round(yearProgress);
+            monthProgress = Math.round(monthProgress);
+            dayProgress = Math.round(dayProgress);
+
+            document.getElementById('year-progress').setAttribute('data-progress', yearProgress);
+            document.getElementById('year-progress').querySelector('.progress-bar-fill').style.width = yearProgress + '%';
+
+            document.getElementById('month-progress').setAttribute('data-progress', monthProgress);
+            document.getElementById('month-progress').querySelector('.progress-bar-fill').style.width = monthProgress + '%';
+
+            document.getElementById('day-progress').setAttribute('data-progress', dayProgress);
+            document.getElementById('day-progress').querySelector('.progress-bar-fill').style.width = dayProgress + '%';
+        }
+
+        // 初始化进度条
+        document.addEventListener('DOMContentLoaded', () => {
+            const progressBars = document.querySelectorAll('.progress-bar');
+            for (const bar of progressBars) {
+                bar.innerHTML += '<div class="progress-bar-fill"></div>';
+            }
+            updateProgress();
+            setInterval(updateProgress, 1000); // 每秒更新一次
+        });
+
+
+        // 入职时间
+        function calculateDaysSinceEntry(entryDate) {
+            const currentDate = new Date();
+            const diffTime = Math.abs(currentDate - entryDate);
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // 计算天数差
+        }
+
+        function updateentry(knownEntryDate) {
+            const entryDays = calculateDaysSinceEntry(new Date(knownEntryDate));
+            document.getElementById("entry-date").textContent = entryDays + " 天";
+        }
+
+        // 假设入职日期为 '2024-03-01'
+        const entryDateString = '2024-03-01';
+        window.onload = function () {
+            updateProgress(entryDateString);
+            setInterval(() => updateentry(entryDateString), 1000); // 每秒更新一次
+            setInterval(() => updateLeaveTime(), 1000);
+        };
+
+
+        // 下班时间
+        function calculateTimeUntilNextLeave() {
+            const currentDate = new Date();
+            let hours = currentDate.getHours();
+            let minutes = currentDate.getMinutes();
+
+            // 判断是上午、下午还是已经下班
+            if (hours < 8 || (hours === 8 && minutes < 30)) { // 上午上班前
+                return '已到上班时间';
+            } else if (hours >= 12 && hours < 14) { // 中午休息时段（假设12:00-14:00）
+                return '中午休息中';
+            } else if (hours === 12 && minutes <= 30) { // 中午下班时间内
+                leaveHour = 12; // 中午下班时间
+            } else if (hours < 18) { // 下午上班后且未到晚上下班
+                leaveHour = 18; // 晚上下班时间
+            } else { // 已经超过晚上下班时间
+                return '已到下班时间';
+            }
+
+            const leaveMinutes = (leaveHour === 18 ? 30 : 0); // 晚上为30分钟，中午为0分钟
+
+            // 计算剩余时间
+            const leaveDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), leaveHour, leaveMinutes);
+
+            const diffTime = Math.abs(leaveDate - currentDate);
+
+            let remainingHours = Math.floor(diffTime / (1000 * 60 * 60));
+            let remainingMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+
+            return `${remainingHours} 小时 ${remainingMinutes} 分钟`;
+        }
+
+        function updateLeaveTime() {
+            const timeText = calculateTimeUntilNextLeave();
+            document.getElementById("leave-date").textContent = timeText;
+        }
+
+    </script>
+</body>
+
+</html>
